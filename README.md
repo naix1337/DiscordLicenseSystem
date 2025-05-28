@@ -1,7 +1,7 @@
-## 🔑 Discord Key System with Web Dashboard
+### 🔑 Discord Key System with Web Dashboard
 A full-featured Discord Key System with integrated web dashboard, allowing users to redeem keys directly via Discord, and admins to view, generate, and manage keys through a secure web interface.
 
-## 🌐 Features
+### 🌐 Features
 # 🎟️ Key Redemption in Discord
 Users can redeem keys directly through Discord using a command (e.g. /redeem YOUR-KEY).
 
