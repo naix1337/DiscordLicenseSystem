@@ -6,20 +6,15 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) # Wichtig für Sessions und Flash-Nachrichten!
+app.secret_key = os.urandom(24) 
 
-# --- Hilfsfunktion für Admin-Check (einfach gehalten) ---
 def is_admin():
-    # Eine einfach gehaltene Admin-Überprüfung. Für eine robustere App
-    # sollte dies über eine Rollen-Spalte in der 'users'-Tabelle erfolgen.
-    return session.get('username') == 'admin' # Ersetze 'admin' durch den tatsächlichen Admin-Benutzernamen
+    return session.get('username') == 'admin' 
 
-# --- Datenbank-Initialisierung ---
 def init_db():
     conn = sqlite3.connect('key_system.db')
     c = conn.cursor()
 
-    # Tabelle für Benutzerkonten
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,17 +24,13 @@ def init_db():
         )
     ''')
 
-    # NEU: Überprüfen und Hinzufügen der Spalte 'created_at' falls sie fehlt
     try:
         c.execute("SELECT created_at FROM users LIMIT 1")
     except sqlite3.OperationalError:
-        # Spalte existiert nicht, füge sie hinzu
         c.execute("ALTER TABLE users ADD COLUMN created_at TIMESTAMP")
-        # Aktualisiere vorhandene Zeilen mit dem aktuellen Zeitstempel
         c.execute("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
 
 
-    # Tabelle für Keys
     c.execute('''
         CREATE TABLE IF NOT EXISTS keys (
             key TEXT PRIMARY KEY,
@@ -50,7 +41,6 @@ def init_db():
         )
     ''')
 
-    # Tabelle für Redemptions
     c.execute('''
         CREATE TABLE IF NOT EXISTS redemptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +54,6 @@ def init_db():
         )
     ''')
 
-    # NEU: Tabelle für Einladungscodes
     c.execute('''
         CREATE TABLE IF NOT EXISTS invite_codes (
             code TEXT PRIMARY KEY,
@@ -73,25 +62,23 @@ def init_db():
         )
     ''')
 
-    # Überprüfen und Hinzufügen der Spalte 'discord_username'
     try:
         c.execute("ALTER TABLE redemptions ADD COLUMN discord_username TEXT")
     except sqlite3.OperationalError as e:
         if "duplicate column name: discord_username" not in str(e):
             raise e
-        pass # Spalte existiert bereits
+        pass 
 
     conn.commit()
     conn.close()
 
-    # Initialen Admin-Benutzer erstellen, falls keiner existiert
     conn = sqlite3.connect('key_system.db')
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT * FROM users WHERE username = ?', ('admin',))
     if not c.fetchone():
-        hashed_password = generate_password_hash('admin_password') # Setze hier ein sicheres Initialpasswort!
-        # Füge created_at beim Initial-Admin hinzu
+        hashed_password = generate_password_hash('admin_password') 
+      
         c.execute('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)', ('admin', hashed_password, datetime.now()))
         conn.commit()
         print("\n---------------------------------------------------------")
@@ -100,9 +87,8 @@ def init_db():
         print("---------------------------------------------------------\n")
     conn.close()
 
-# Funktion zur Generierung eines Einladungscodes
 def generate_invite_code():
-    code = secrets.token_urlsafe(16) # Generiert einen sicheren, URL-freundlichen String
+    code = secrets.token_urlsafe(16) 
     conn = sqlite3.connect('key_system.db')
     c = conn.cursor()
     try:
@@ -113,13 +99,11 @@ def generate_invite_code():
         print(f"---------------------------------------------------------\n")
         return code
     except sqlite3.IntegrityError:
-        # Falls der Code aus einem seltenen Zufall bereits existiert, versuche es erneut
         return generate_invite_code()
     finally:
         conn.close()
 
 
-# --- Routen ---
 @app.route('/')
 def home():
     if not session.get('logged_in'):
@@ -170,7 +154,6 @@ def register():
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
 
-        # Einladungscode überprüfen
         c.execute('SELECT * FROM invite_codes WHERE code = ? AND used_by IS NULL', (invite_code,))
         invite_entry = c.fetchone()
 
@@ -179,7 +162,6 @@ def register():
             conn.close()
             return render_template('register.html')
 
-        # Überprüfen, ob der Benutzername bereits existiert
         c.execute('SELECT * FROM users WHERE username = ?', (username,))
         if c.fetchone():
             flash('Benutzername existiert bereits.', 'danger')
@@ -189,9 +171,7 @@ def register():
         hashed_password = generate_password_hash(password)
 
         try:
-            # Füge created_at beim neuen Benutzer hinzu
             c.execute('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)', (username, hashed_password, datetime.now()))
-            # Einladungscode als verwendet markieren
             c.execute('UPDATE invite_codes SET used_by = ?, used_at = ? WHERE code = ?',
                       (username, datetime.now(), invite_code))
             conn.commit()
@@ -231,22 +211,19 @@ def dashboard():
     return render_template('dashboard.html', keys=keys, redemptions=redemptions, username=session.get('username'))
 
 
-# NEU: Admin-Route für die Benutzerübersicht
 @app.route('/admin_users')
 def admin_users():
     if not session.get('logged_in') or not is_admin():
         flash('Sie haben keine Berechtigung, diese Seite aufzurufen.', 'danger')
-        return redirect(url_for('dashboard')) # Oder login, je nach gewünschtem Verhalten
+        return redirect(url_for('dashboard')) 
 
     conn = sqlite3.connect('key_system.db')
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
-    # Alle Benutzer abrufen
     c.execute('SELECT id, username, created_at FROM users ORDER BY created_at DESC')
     users = c.fetchall()
 
-    # Alle Einladungscodes abrufen
     c.execute('SELECT * FROM invite_codes ORDER BY used_at DESC, code ASC')
     invite_codes = c.fetchall()
 
@@ -270,7 +247,6 @@ def generate_key():
         conn = sqlite3.connect('key_system.db')
         c = conn.cursor()
 
-        # created_by ist jetzt der eingeloggte Benutzer
         c.execute('''
             INSERT INTO keys (key, duration_days, created_at, created_by, uses_left)
             VALUES (?, ?, ?, ?, ?)
@@ -300,6 +276,5 @@ def delete_key(key):
 
 if __name__ == '__main__':
     init_db()
-    # Generiere einen Einladungscode beim Start der App und gib ihn in der Konsole aus
     generate_invite_code()
     app.run(debug=True, host='0.0.0.0', port=5000)
