@@ -22,3 +22,11 @@ See which keys are used, unused, or expired.
 
 ### ✨ Modern UI
 Clean and responsive frontend for the web dashboard.
+
+## Preview
+
+![1](https://github.com/user-attachments/assets/eaa4fe55-7516-4c8f-b8d1-b14ce8f6e4ee)
+
+![2](https://github.com/user-attachments/assets/91c57dd9-3363-4d8b-9cd6-939214304ebd)
+
+![3](https://github.com/user-attachments/assets/c1cd3dc2-7a99-4c54-b65a-0bb33bd1c83b)
