@@ -12,7 +12,7 @@ View all generated and redeemed keys
 
 Generate new keys
 
-Delete or disable keys
+Delete or disable keys.
 
 ### 🔐 Secure Login System
 Web dashboard access is protected by a login system.
